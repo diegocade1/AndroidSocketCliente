@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.drm.DrmStore;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -14,17 +15,27 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -33,7 +44,7 @@ public class MainActivity extends AppCompatActivity
     private int Port = 0;
     private EditText etIP,etPort,etTexto;
     private Button btnConnect, btnEnviar,btnDisconnect;
-    private TextView tvConsole;
+    private TextView tvConsole,tvInfo;
     private Thread Thread1 = null;
     private Context context;
     private boolean isThread1Active;
@@ -44,6 +55,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = this;
+        tvInfo = findViewById(R.id.tvInfo);
         etIP = (EditText) findViewById(R.id.etIP);
         etTexto = (EditText) findViewById(R.id.etTexto);
         etPort = (EditText) findViewById(R.id.etPort);
@@ -51,9 +63,12 @@ public class MainActivity extends AppCompatActivity
         btnConnect = (Button) findViewById(R.id.btnConnect);
         btnEnviar = (Button) findViewById(R.id.btnEnviar);
         btnDisconnect = (Button) findViewById(R.id.btnDisconnect);
+
         ActionButtonConectar(btnConnect);
         ActionButtonEnviar(btnEnviar);
         ActionButtonDesconectar(btnDisconnect);
+
+        tvInfo.setText(getIPAddress(true));
     }
 
     private void ActionButtonConectar(Button conectar)
@@ -103,8 +118,8 @@ public class MainActivity extends AppCompatActivity
                     etPort.setEnabled(true);
                     etTexto.setEnabled(false);
                     btnEnviar.setEnabled(false);
-                    btnDisconnect.setVisibility(View.GONE);
-                    btnConnect.setVisibility(View.VISIBLE);
+                    btnDisconnect.setVisibility(Button.GONE);
+                    btnConnect.setVisibility(Button.VISIBLE);
                 }
                 catch (IOException e)
                 {
@@ -146,6 +161,34 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    private static String getIPAddress(boolean useIPv4) {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress()) {
+                        String sAddr = addr.getHostAddress();
+                        //boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
+                        boolean isIPv4 = sAddr.indexOf(':')<0;
+
+                        if (useIPv4) {
+                            if (isIPv4)
+                                return sAddr;
+                        } else {
+                            if (!isIPv4) {
+                                int delim = sAddr.indexOf('%'); // drop ip6 zone suffix
+                                return delim<0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) { } // for now eat exceptions
+        return "";
+    }
+
+
     /*---------------------------------Thread 1--------------------------------------------------*/
 
     private static BufferedReader input;
@@ -172,8 +215,8 @@ public class MainActivity extends AppCompatActivity
                         etPort.setEnabled(false);
                         etTexto.setEnabled(true);
                         btnEnviar.setEnabled(true);
-                        btnDisconnect.setVisibility(View.VISIBLE);
-                        btnConnect.setVisibility(View.GONE);
+                        btnDisconnect.setVisibility(Button.VISIBLE);
+                        btnConnect.setVisibility(Button.GONE);
                     }
                 });
                     new Thread(new Thread2()).start();
@@ -206,11 +249,6 @@ public class MainActivity extends AppCompatActivity
                                     tvConsole.append("Server: "+ mensaje + "\r\n");
                                 }
                             });
-                        }
-                        else
-                        {
-                            Thread1 = new Thread(new Thread1());
-                            Thread1.start();
                         }
                 }
                 catch (IOException e)
