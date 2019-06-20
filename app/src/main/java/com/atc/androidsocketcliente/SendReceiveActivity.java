@@ -49,7 +49,9 @@ public class SendReceiveActivity extends AppCompatActivity {
 
         tvInfo = findViewById(R.id.tvInfo2);
         etIP = (EditText) findViewById(R.id.etIP2);
+        etIP.setText("192.168.1.135");
         etPort = (EditText) findViewById(R.id.etPort2);
+        etPort.setText("100");
         btnRecibirArchivo = (Button) findViewById(R.id.btnRecibirArchivo);
         btnEnviarArchivo = (Button) findViewById(R.id.btnEnviarArchivo);
 
@@ -221,17 +223,13 @@ public class SendReceiveActivity extends AppCompatActivity {
                     byte[] bytes = new byte[1024];
                     FileOutputStream fos = new FileOutputStream(file);
                     BufferedOutputStream bos = new BufferedOutputStream(fos);
-                    int byteRead = is.read(bytes,0,bytes.length);
-                    actual= byteRead;
+                    int byteRead;
 
-                    do
+                    while((byteRead = is.read(bytes,0,bytes.length)) != -1)
                     {
-                        byteRead = is.read(bytes,actual,(bytes.length - actual));
-                        if(byteRead >= 0) actual+=byteRead;
+                        bos.write(bytes,0,byteRead);
                     }
-                    while(byteRead > -1);
 
-                    bos.write(bytes,0,actual);
                     bos.flush();
                     bos.close();
                     socket.close();
