@@ -157,8 +157,6 @@ public class SendReceiveActivity extends AppCompatActivity {
 
     /*---------------------------------Threads --------------------------------------------------*/
 
-    private static BufferedReader input;
-    private static PrintWriter output;
     private Socket socket;
 
     class Thread_SendFile implements Runnable
